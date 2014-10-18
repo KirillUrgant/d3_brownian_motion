@@ -2,29 +2,39 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>d3</title>
+	<title>Brownian motion</title>
 	<script src="d3.js"></script>
 	<style>
 		svg {
 			border: 2px solid #000;
+			display: block;
+			margin: 0 auto;
+		}
+		h1 {
+			text-align: center;
 		}
 	</style>
 </head>
 <body>
+	<h1>d3.js Brownian motion</h1>
 	<script>
 		//Конструктор точки
 		function dot(x,y) {
 			this.x=x;
 			this.y=y;
+			//свойство определяющее находится точка в коллизии или нет
 			this.collision=false;
+			//свойство определяющее выход точки из коллизии
 			this.run=false;
 		};
 
 		//Массив точек
 		var dotsArray=[];
 
+		//Ширина, высота svg контейнера, радиус области курсора
 		var width=500,
-			height=500;
+			height=500,
+			radius=200;
 
 		//Заолняем массив точек случайными значениями координат
 		for (var i=0; i<200; i++) {
@@ -37,17 +47,6 @@
 		var svg=d3.select("body")
 				.append("svg")
 				.attr({"width":width,"height":height});
-
-		//Текущие координаты курсора в контейнере
-		var mouseSvg={};
-		svg.on("mousemove", function(){
-			mouseSvg.leave=false;
-			mouseSvg.x=d3.mouse(this)[0];
-			mouseSvg.y=d3.mouse(this)[1];
-		});
-		svg.on("mouseleave", function(){
-			mouseSvg.leave=true;
-		});
 
 		//Создаем кружки
 		var circle=svg.selectAll("circle")
@@ -62,27 +61,39 @@
 					.attr("cy",function(d){
 						return d.y;
 					})
-					.each(function(d, i) {
-						var obj=d3.select(this);
-
-						setInterval(function() {
-							//Проверяем наличие курсора в области svg контейнера
-							if (!mouseSvg.leave) {
-
-								//Если точка не в состоянии коллизии
-								if (!dotsArray[i].collision) {
-
-									//Если обнаружена коллизия
-									if (collision(obj.attr("cx"), obj.attr("cy"))) {
-										dotsArray[i].collision=true;
-										new_coord(i);
-										animate(obj);
-									}
-								};
-							};
-						},17);
+					.each(function(){
+						animate(d3.select(this));
 					});
 
+		//Текущие координаты курсора в контейнере
+		var mouseSvg={};
+
+		//Обработчик движения курсора в области svg контейнера
+		svg.on("mousemove", function(){
+			mouseSvg.leave=false;
+			mouseSvg.x=d3.mouse(this)[0];
+			mouseSvg.y=d3.mouse(this)[1];
+
+			circle.each(function(d, i) {
+				//Если курсор в области svg контейнера
+				if (!mouseSvg.leave) {
+					//Если точка не в состоянии коллизии
+					if (!dotsArray[i].collision) {
+						//Если обнаружена коллизия
+						if (collision(d3.select(this).attr("cx"), d3.select(this).attr("cy"))) {
+							dotsArray[i].collision=true;
+							new_coord(i);
+							animate(d3.select(this));
+						}
+					}
+				}
+			});
+		});
+		svg.on("mouseleave", function(){
+			mouseSvg.leave=true;
+		});
+
+		//Анимация движения точек
 		function animate(obj) {
 			obj
 			.transition()
@@ -91,7 +102,7 @@
 					return 250;
 				}
 				else {
-					return 2000;//Math.round(2000*Math.random());
+					return Math.round(2000*Math.random());
 				}
 			})
 			.ease("linear")
@@ -106,30 +117,28 @@
 			})
 			.attr("cx",function(d, i){
 				if (d.collision) {
+					//Если произошла коллизия возвращаем новые координаты,
+					//не принадлежащие области курсора
 					return d.x;
 				} else {
-					new_coord(i);
-					return d.x;
-					//return Math.round(width*Math.random());
-				};
+					return Math.round(500*Math.random());
+				}
 			})
 			.attr("cy",function(d, i){
 				if (d.collision) {
+					//Устанавливаем выход из коллизии
 					d.run=true;
 					return d.y;
 				} else {
-					return d.y;
-					//return Math.round(height*Math.random());
-				};
+					return Math.round(500*Math.random());
+				}
 			})
-			.each("end",function(d) {
+			.each("end",function(d, i) {
 				if (d.run) {
 					d.collision=false;
 					d.run=false;
-					animate(d3.select(this));
-				} else {
-					animate(d3.select(this));
-				}
+				};
+				animate(d3.select(this));
 			});
 		};
 
@@ -137,7 +146,7 @@
 		function collision(x, y) {
 			var dist=Math.sqrt(Math.pow((mouseSvg.x-x),2)+Math.pow((mouseSvg.y-y),2));
 			var b;
-			if (dist<150) {
+			if (dist<radius) {
 				return true;
 			} else {
 				return false;
