@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>d3</title>
+	<script src="d3.js"></script>
+	<style>
+		svg {
+			border: 2px solid #000;
+		}
+	</style>
+</head>
+<body>
+	<script>
+		//Конструктор точки
+		function dot(x,y) {
+			this.x=x;
+			this.y=y;
+			this.collision=false;
+			this.run=false;
+		};
+
+		//Массив точек
+		var dotsArray=[];
+
+		var width=500,
+			height=500;
+
+		//Заолняем массив точек случайными значениями координат
+		for (var i=0; i<200; i++) {
+			randX=Math.round(width*Math.random());
+			randY=Math.round(height*Math.random());
+			dotsArray[i]=new dot(randX, randY);
+		};
+
+		//Создаем svg контейнер
+		var svg=d3.select("body")
+				.append("svg")
+				.attr({"width":width,"height":height});
+
+		//Текущие координаты курсора в контейнере
+		var mouseSvg={};
+		svg.on("mousemove", function(){
+			mouseSvg.leave=false;
+			mouseSvg.x=d3.mouse(this)[0];
+			mouseSvg.y=d3.mouse(this)[1];
+		});
+		svg.on("mouseleave", function(){
+			mouseSvg.leave=true;
+		});
+
+		//Создаем кружки
+		var circle=svg.selectAll("circle")
+					.data(dotsArray)
+					//связываем выборку с данными
+					.enter()
+					.append("circle")
+					.attr({"r":5,"fill":"#ff0000"})
+					.attr("cx",function(d){
+						return d.x;
+					})
+					.attr("cy",function(d){
+						return d.y;
+					})
+					.each(function(d, i) {
+						var obj=d3.select(this);
+
+						setInterval(function() {
+							//Проверяем наличие курсора в области svg контейнера
+							if (!mouseSvg.leave) {
+
+								//Если точка не в состоянии коллизии
+								if (!dotsArray[i].collision) {
+
+									//Если обнаружена коллизия
+									if (collision(obj.attr("cx"), obj.attr("cy"))) {
+										dotsArray[i].collision=true;
+										new_coord(i);
+										animate(obj);
+									}
+								};
+							};
+						},17);
+					});
+
+		function animate(obj) {
+			obj
+			.transition()
+			.duration(function(d){
+				if (d.collision) {
+					return 250;
+				}
+				else {
+					return 2000;//Math.round(2000*Math.random());
+				}
+			})
+			.ease("linear")
+			.attr("fill",function(){
+				var temp;
+				if (obj.attr("fill")=="#ff0000") {
+					temp="#fd0";
+				} else {
+					temp="#ff0000"
+				};
+				return temp;
+			})
+			.attr("cx",function(d, i){
+				if (d.collision) {
+					return d.x;
+				} else {
+					new_coord(i);
+					return d.x;
+					//return Math.round(width*Math.random());
+				};
+			})
+			.attr("cy",function(d, i){
+				if (d.collision) {
+					d.run=true;
+					return d.y;
+				} else {
+					return d.y;
+					//return Math.round(height*Math.random());
+				};
+			})
+			.each("end",function(d) {
+				if (d.run) {
+					d.collision=false;
+					d.run=false;
+					animate(d3.select(this));
+				} else {
+					animate(d3.select(this));
+				}
+			});
+		};
+
+		//Определение коллизии точки и курсора
+		function collision(x, y) {
+			var dist=Math.sqrt(Math.pow((mouseSvg.x-x),2)+Math.pow((mouseSvg.y-y),2));
+			var b;
+			if (dist<150) {
+				return true;
+			} else {
+				return false;
+			};
+		};
+
+		//Установка новой координаты, не принадлежащей области курсора
+		function new_coord(i) {
+			do {
+				dotsArray[i].x=Math.round(width*Math.random());
+				dotsArray[i].y=Math.round(height*Math.random());
+			} while (collision(dotsArray[i].x, dotsArray[i].y));
+		}
+	</script>
+</body>
+</html>
