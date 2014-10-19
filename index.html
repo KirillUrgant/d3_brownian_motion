@@ -70,27 +70,20 @@
 
 		//Обработчик движения курсора в области svg контейнера
 		svg.on("mousemove", function(){
-			mouseSvg.leave=false;
 			mouseSvg.x=d3.mouse(this)[0];
 			mouseSvg.y=d3.mouse(this)[1];
 
 			circle.each(function(d, i) {
-				//Если курсор в области svg контейнера
-				if (!mouseSvg.leave) {
-					//Если точка не в состоянии коллизии
-					if (!dotsArray[i].collision) {
-						//Если обнаружена коллизия
-						if (collision(d3.select(this).attr("cx"), d3.select(this).attr("cy"))) {
-							dotsArray[i].collision=true;
-							new_coord(i);
-							animate(d3.select(this));
-						}
+				//Если точка не в состоянии коллизии
+				if (!dotsArray[i].collision) {
+					//Если обнаружена коллизия
+					if (collision(d3.select(this).attr("cx"), d3.select(this).attr("cy"))) {
+						dotsArray[i].collision=true;
+						new_coord(i);
+						animate(d3.select(this));
 					}
 				}
 			});
-		});
-		svg.on("mouseleave", function(){
-			mouseSvg.leave=true;
 		});
 
 		//Анимация движения точек
